@@ -2,7 +2,7 @@
 
 # 🔓 sesame
 
-**Open sesame! Password-less login to internal web consoles — without the password ever touching the user's machine.**
+**Open sesame! Non-Invasive Password-less login to internal web consoles — without the password ever touching the user's machine.**
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8)](https://go.dev) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE) [![status](https://img.shields.io/badge/status-working%20prototype-brightgreen)]()
 
