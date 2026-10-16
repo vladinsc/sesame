@@ -1,0 +1,73 @@
+{
+  "realm": "demo",
+  "enabled": true,
+  "sslRequired": "none",
+  "groups": [
+    { "name": "projects", "subGroups": [
+      { "name": "demo", "subGroups": [
+        { "name": "dev" },
+        { "name": "prod" }
+      ] }
+    ] },
+    { "name": "admins" }
+  ],
+  "users": [
+    {
+      "username": "alice", "enabled": true, "email": "alice@demo.local", "emailVerified": true,
+      "firstName": "Alice", "lastName": "Dev",
+      "credentials": [{ "type": "password", "value": "alice", "temporary": false }],
+      "groups": ["/projects/demo/dev"]
+    },
+    {
+      "username": "bob", "enabled": true, "email": "bob@demo.local", "emailVerified": true,
+      "firstName": "Bob", "lastName": "Admin",
+      "credentials": [{ "type": "password", "value": "bob", "temporary": false }],
+      "groups": ["/admins"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "sesame-extension",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "https://eienbohlonipiffgdmandlbnchingemp.chromiumapp.org/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "claim.name": "groups"
+          }
+        },
+        {
+          "name": "audience-sesame",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "sesame-extension",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

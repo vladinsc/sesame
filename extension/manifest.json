@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "sesame",
+  "version": "0.1.0",
+  "description": "Password-less login to internal tool consoles. Sign in once; opening a tool logs you in without ever handling its password.",
+  "permissions": [
+    "identity",
+    "cookies",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8080/*",
+    "http://localhost:8080/*",
+    "http://localhost:8088/*",
+    "http://localhost:3000/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "sesame"
+  },
+  "icons": {
+    "128": "icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxwAaupMqUW5/5oLIt/0wvegBoQvuEQAJ2IVOeIilQ/HWDZ0tylpSyMC1jkQREQfUME/hf5ZEjybp3uXJTerxnVRNFaF8hn5u4EC0p12g9aDSZKgKLoiMieFooFX6/VpVYisHvgNdoUH/hqxeq9m0OUzjNQ+WnBMtpWBYUxdL7VZMnssvyZYO4WEA+fCwAQLnciIbS8pPc0okzaMUYmXcMCh2cEN+2VsLS13pwP2jRuHWp6RMjoNjwte9MhsMuaPAXBtzTze1cWqxVuStMc4od1AWV8pXplMP5Grc0l1AqIu0gtVddC/ggBbAzaK9ie1GYcSYiJh0bJ0tx2AUIY+ePQIDAQAB"
+}

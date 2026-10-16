@@ -1,0 +1,56 @@
+# sesame-egress: the only component with network reach to the tools. Example manifest — review and adapt before
+# use; this repo never deploys it for you. Hardening notes are in docs/RISKS.md (F5).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sesame-egress
+  namespace: sesame
+  labels: { app: sesame-egress }
+spec:
+  replicas: 2 # stateless (tickets verified offline) — scale horizontally
+  selector: { matchLabels: { app: sesame-egress } }
+  template:
+    metadata:
+      labels: { app: sesame-egress }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: egress
+          image: sesame-egress:dev
+          args: ["-config", "/etc/sesame/egress.yaml"]
+          ports: [{ containerPort: 8081, name: connect }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { memory: 64Mi, cpu: 20m }
+            limits: { memory: 128Mi }
+          volumeMounts:
+            - { name: config, mountPath: /etc/sesame, readOnly: true }
+          # A VPN sidecar (e.g. a NetBird client) is added here in a real deployment so the egress can reach the
+          # tools' networks; its group gets a single coarse rule. See docs/RISKS.md.
+      volumes:
+        - name: config
+          configMap: { name: sesame-egress-config }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: sesame-egress, namespace: sesame }
+spec:
+  selector: { app: sesame-egress }
+  ports: [{ name: connect, port: 8081, targetPort: 8081 }]
+---
+# Only the broker may reach the egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: sesame-egress-ingress, namespace: sesame }
+spec:
+  podSelector: { matchLabels: { app: sesame-egress } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: sesame-broker } } }]
+      ports: [{ port: 8081 }]

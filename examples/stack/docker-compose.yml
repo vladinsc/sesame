@@ -1,0 +1,134 @@
+# Full local sesame stack:
+#   keycloak   - OIDC identity + groups (realm "demo" imported from keycloak/realm-demo.json)
+#   vaultwarden- credential store (holds the Grafana admin password)
+#   bw-serve   - Bitwarden CLI running unlocked as a read-only bot, exposed to the broker
+#   grafana    - the target tool sesame logs you into
+#   egress     - ticket-gated CONNECT proxy (only thing that reaches grafana here)
+#   broker     - the public API the extension talks to
+#
+# Bring up:  docker compose -f examples/stack/docker-compose.yml up -d --build
+# Seed:      bash examples/stack/bootstrap.sh
+# All on one bridge network; the broker is published on localhost:8080 for the extension.
+name: sesame-stack
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm", "--http-port=8088"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: "http://localhost:8088"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8088:8088"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8088 && echo ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  vaultwarden:
+    image: vaultwarden/server:1.34.1
+    environment:
+      ADMIN_TOKEN: demo-admin-token
+      SIGNUPS_ALLOWED: "true"
+      I_REALLY_WANT_VOLATILE_STORAGE: "true" # in-memory; fine for a demo
+    ports:
+      - "8089:80"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/alive || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  bw-serve:
+    image: node:22-alpine
+    depends_on:
+      vaultwarden:
+        condition: service_healthy
+    # Logs into Vaultwarden with the bot API key and serves the CLI on :8087. Credentials come from bootstrap.sh
+    # via the shared env file written at seed time.
+    env_file:
+      - ./.secrets/bw.env
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        npm i -g @bitwarden/cli@2024.9.0 >/dev/null 2>&1 || npm i -g @bitwarden/cli >/dev/null 2>&1
+        export BITWARDENCLI_APPDATA_DIR=/bw
+        bw config server "$$BW_URL" >/dev/null
+        if [ "$$(bw status | grep -o 'unauthenticated' || true)" = "unauthenticated" ]; then
+          bw login --apikey >/dev/null
+        fi
+        export BW_SESSION="$$(bw unlock --passwordenv BW_PASSWORD --raw)"
+        bw sync >/dev/null
+        exec bw serve --hostname 0.0.0.0 --port 8087
+    expose:
+      - "8087"
+
+  # One-shot seeder (run via: docker compose run --rm seed). Registers the bot + stores the Grafana credential.
+  seed:
+    image: python:3.12-slim
+    profiles: ["seed"]
+    depends_on:
+      vaultwarden:
+        condition: service_healthy
+    environment:
+      VW_URL: http://vaultwarden
+      BOT_EMAIL: grafanabot@demo.local
+      BOT_PASSWORD: bot-master-pw
+      ITEM_NAME: Grafana admin
+      ITEM_USERNAME: admin
+      ITEM_PASSWORD: s3cret-admin
+      ITEM_URL: http://localhost:3000
+      ITEM_SCOPE: projects/demo/dev
+    volumes:
+      - ./seed:/seed:ro
+      - ./.secrets:/out
+    command: ["sh", "-c", "pip install -q cryptography && python /seed/seed.py"]
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: s3cret-admin
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  egress:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args: { CMD: sesame-egress }
+    command: ["-config", "/etc/sesame/egress.yaml"]
+    restart: on-failure
+    volumes:
+      - ./sesame:/etc/sesame:ro
+    expose:
+      - "8081"
+
+  broker:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args: { CMD: sesame-broker }
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    command: ["-config", "/etc/sesame/broker.yaml"]
+    restart: on-failure
+    volumes:
+      - ./sesame:/etc/sesame:ro
+    ports:
+      - "8080:8080"

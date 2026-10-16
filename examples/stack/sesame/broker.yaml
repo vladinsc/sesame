@@ -1,0 +1,41 @@
+listen: ":8080"
+login_timeout: 20s
+
+identity:
+  type: oidc
+  issuer: "http://localhost:8088/realms/demo"       # what the browser + token use
+  internal_url: "http://keycloak:8088/realms/demo"  # how the broker reaches Keycloak
+  client_id: sesame-extension
+  audience: sesame-extension
+
+roles:
+  type: oidc-claims   # groups come from the token's "groups" claim
+
+credentials:
+  type: bitwarden
+  serve_url: "http://bw-serve:8087"
+  organization_id: ""   # personal vault in this demo; scope comes from the item's sesame-scope field
+
+catalog:
+  type: file
+  path: /etc/sesame/catalog.yaml
+
+policy:
+  rules:
+    - group_pattern: "/projects/{p}/{env}"
+      scopes: ["projects/{p}/{env}"]
+    - groups: ["/admins"]
+      scopes: ["*"]
+
+pools:
+  - name: local
+    egress_addr: "egress:8081"
+    sign_key_file: /etc/sesame/ticket-seed.hex
+    key_id: k1
+    ticket_ttl: 30s
+
+default_pool: local
+
+rate_limit:
+  max: 60
+  window: 1m

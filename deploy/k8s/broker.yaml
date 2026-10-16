@@ -1,0 +1,47 @@
+# sesame-broker: the public API. Example manifest — review and adapt before use.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sesame-broker
+  namespace: sesame
+  labels: { app: sesame-broker }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: sesame-broker } }
+  template:
+    metadata:
+      labels: { app: sesame-broker }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: broker
+          image: sesame-broker:dev
+          args: ["-config", "/etc/sesame/broker.yaml"]
+          ports: [{ containerPort: 8080, name: http }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe: { httpGet: { path: /healthz, port: 8080 }, periodSeconds: 10 }
+          resources:
+            requests: { memory: 128Mi, cpu: 50m }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: config, mountPath: /etc/sesame, readOnly: true }
+            - { name: keys, mountPath: /etc/sesame/keys, readOnly: true }
+      volumes:
+        - name: config
+          configMap: { name: sesame-broker-config }
+        - name: keys
+          secret: { secretName: sesame-ticket-key } # ed25519 signing seed
+---
+apiVersion: v1
+kind: Service
+metadata: { name: sesame-broker, namespace: sesame }
+spec:
+  selector: { app: sesame-broker }
+  ports: [{ name: http, port: 80, targetPort: 8080 }]
+# Expose via your ingress/edge in front of this Service, preserving the client IP for rate limiting.

@@ -1,0 +1,12 @@
+# Local demo catalog. One Grafana-like tool, two accounts (admin, viewer).
+tools:
+  - id: demo-grafana
+    name: Demo Grafana
+    url: http://127.0.0.1:3000
+    login: grafana
+    pool: local
+    accounts:
+      - label: admin
+        ref: static://grafana-admin
+      - label: viewer
+        ref: static://grafana-viewer

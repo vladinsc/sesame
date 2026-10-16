@@ -1,0 +1,7 @@
+# Rendered by bootstrap.sh with a freshly generated key. The public key must match the broker's
+# ticket signing key (examples/stack/sesame/ticket-seed.hex, git-ignored).
+listen: ":8081"
+pool: local
+public_keys:
+  - key_id: k1
+    hex: "__TICKET_PUBKEY__"

@@ -1,0 +1,49 @@
+# Broker for the local demo. Dev identity (HMAC tokens), static roles/credentials, file catalog.
+# Replace identity/roles/credentials with oidc/keycloak/bitwarden for a real deployment.
+listen: "127.0.0.1:8080"
+login_timeout: 15s
+
+identity:
+  type: dev
+  issuer: "https://idp.local/realms/demo"
+  client_id: sesame-extension
+  secret_file: examples/local/dev-secret
+
+roles:
+  type: static        # groups come from the token; "extra" can add more per subject
+
+credentials:
+  type: static
+  items:
+    - id: grafana-admin
+      username: admin
+      password: s3cret
+      scopes: ["projects/demo/dev"]
+    - id: grafana-viewer
+      username: viewer
+      password: viewer-pw
+      scopes: ["projects/demo/prod"]   # only prod-group users may use this one
+
+catalog:
+  type: file
+  path: examples/local/catalog.yaml
+
+policy:
+  rules:
+    - group_pattern: "/projects/{p}/{env}"
+      scopes: ["projects/{p}/{env}"]
+    - groups: ["/admins"]
+      scopes: ["*"]
+
+pools:
+  - name: local
+    egress_addr: "127.0.0.1:8081"
+    sign_key_file: examples/local/ticket-seed.hex
+    key_id: k1
+    ticket_ttl: 30s
+
+default_pool: local
+
+rate_limit:
+  max: 30
+  window: 1m

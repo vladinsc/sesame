@@ -1,0 +1,13 @@
+# Rendered by bootstrap.sh with the real Vaultwarden item id.
+# url        = what the browser opens (cookies are set for this origin)
+# connect_to = where the egress dials inside the docker network
+tools:
+  - id: grafana
+    name: Grafana
+    url: http://localhost:3000
+    connect_to: grafana:3000
+    login: grafana
+    pool: local
+    accounts:
+      - label: admin
+        ref: "bitwarden://__GRAFANA_ITEM_ID__"

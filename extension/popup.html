@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>sesame</title>
+    <style>
+      :root { color-scheme: light dark; --fg: #1f2933; --muted: #616e7c; --accent: #1565c0; --line: #d7dce1; }
+      @media (prefers-color-scheme: dark) { :root { --fg: #e6e8eb; --muted: #9aa5b1; --line: #343a40; } }
+      body { font: 14px/1.4 system-ui, sans-serif; color: var(--fg); margin: 0; width: 320px; }
+      header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+      header h1 { font-size: 15px; margin: 0; letter-spacing: .5px; }
+      .who { font-size: 12px; color: var(--muted); }
+      ul { list-style: none; margin: 0; padding: 6px 0; max-height: 360px; overflow: auto; }
+      li { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; gap: 8px; }
+      li:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+      .name { font-weight: 600; }
+      .acct { font-size: 12px; color: var(--muted); }
+      button { font: inherit; border: 1px solid var(--accent); color: #fff; background: var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+      button.ghost { background: transparent; color: var(--accent); }
+      .empty, .msg { padding: 14px; color: var(--muted); }
+      footer { border-top: 1px solid var(--line); padding: 10px 14px; display: flex; justify-content: space-between; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>sesame</h1>
+      <span class="who" id="who"></span>
+    </header>
+    <div id="body"><div class="msg">Loading…</div></div>
+    <footer>
+      <button class="ghost" id="auth">Sign in</button>
+      <span class="who" id="count"></span>
+    </footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+# Egress proxy example. The public key must match the broker's ticket signing key.
+# The demo (examples/local/demo.sh) generates a fresh keypair and renders this file into .run/.
+listen: "127.0.0.1:8081"
+pool: local
+public_keys:
+  - key_id: k1
+    hex: "<broker ticket signing public key hex, from sesame-keygen>"

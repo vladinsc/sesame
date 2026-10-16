@@ -1,0 +1,20 @@
+# Generated demo artifacts (keys, secrets, rendered configs, logs, binaries)
+examples/local/.run/
+examples/local/dev-secret
+examples/local/keys.txt
+examples/local/*.hex
+
+# Full-stack demo secrets and generated material (NEVER commit)
+examples/stack/.secrets/
+examples/stack/sesame/ticket-seed.hex
+examples/stack/sesame/catalog.rendered.yaml
+
+# Build output
+/bin/
+*.exe
+*.test
+*.out
+
+# Browser extension build
+extension/dist/
+node_modules/
